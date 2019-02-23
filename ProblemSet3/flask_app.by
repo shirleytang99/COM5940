@@ -1,0 +1,51 @@
+from flask import Flask, render_template, request, json, redirect, session
+from flask import Markup
+import requests
+
+app = Flask(__name__)
+app.config["DEBUG"] = False
+
+@app.route("/")
+def home():
+    return render_template('home.html')
+
+@app.route("/table")
+def table():
+    r = requests.get('https://api.airtable.com/v0/app65vUW7fVUSBqwi/Imported%20table?api_key=keytIXhS7YQcZwe4a')
+    dict = r.json()
+    dataset = []
+    for i in dict['records']:
+         dict = i['fields']
+         del dict["pics"]
+         dataset.append(dict)
+    return render_template('table.html', entries=dataset)
+
+@app.route("/chart")
+def chart():
+    r = requests.get('https://api.airtable.com/v0/appDEJ289r95fbxBt/Rollup?api_key=keytIXhS7YQcZwe4a&maxRecords=7&view=Grid%20view')
+    dict1 = r.json()
+    dict2 = {}
+    dataset = []
+    name_list = []
+    total_entries_list = []
+    for i in dict1['records']:
+         dict2 = i['fields']
+         dataset.append(dict2)
+    for item in dataset:
+        name_list.append(item.get('User'))
+        total_entries_list.append(item.get('Rollup_cred_sum'))
+    return render_template('flask_chart.html', entries = zip(name_list, total_entries_list))
+
+@app.route("/login")
+def login():
+    return render_template('login.html')
+
+@app.route("/process",methods=['POST'])
+def process():
+    email = request.form['email']
+    password = request.form['password']
+    message = "Email is: " + email + " and the password is: " + password
+    return render_template('home.html', message=message)
+
+if __name__ == '__main__':
+   app.run(debug = True)
